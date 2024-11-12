@@ -1,5 +1,6 @@
 package com.app.SpringSecurityApp.config.security;
 
+import com.app.SpringSecurityApp.service.UserDetailServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,55 +13,15 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-//        return httpSecurity
-//
-//                //Cross-site request forgery, vulnerabilidad web en apps con formularios y manejo de sesiones.
-//                .csrf(csrf -> csrf.disable())
-//
-//                //Se utiliza para cuando se loguea con usuario y contraseña y no TOKEN
-//                .httpBasic(Customizer.withDefaults())
-//
-//                //Manejo de sesion, STATELESS para que no expire la sesion ni se guarde en memoria
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//
-//                //Autorizar endpoints y peticiones
-//                .authorizeHttpRequests(http -> {
-//
-//                    //Publicos
-//                    http.requestMatchers(HttpMethod.GET, "/auth/hello").permitAll();
-//
-//                    //Privados
-//                    http.requestMatchers(HttpMethod.GET, "/auth/hello-secured").hasAuthority("READ");
-//
-//                    //Denegar acceso a cualquier endpoint no especificado
-//                    http.anyRequest().denyAll();
-//
-//                    //Denegar acceso a cualquier endpoint no especificado si no se esta autenticado antes
-//                    //http.anyRequest().authenticated();
-//                })
-//
-//                .build();
-//
-//    }
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -79,10 +40,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(http -> {
 
                     //Publicos
-                    http.requestMatchers(HttpMethod.GET, "/auth/hello").permitAll();
+                    http.requestMatchers(HttpMethod.GET, "/auth/get").permitAll();
 
                     //Privados
-                    http.requestMatchers(HttpMethod.GET, "/auth/hello-secured").hasAuthority("READ");
+                    http.requestMatchers(HttpMethod.POST, "/auth/post").hasAnyAuthority("CREATE");
+                    http.requestMatchers(HttpMethod.PATCH, "/auth/patch").hasAnyAuthority("REFACTOR");
 
                     //Denegar acceso a cualquier endpoint no especificado
                     http.anyRequest().denyAll();
@@ -94,6 +56,17 @@ public class SecurityConfig {
                 .build();
 
     }
+
+    //    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+//        return httpSecurity
+//                .csrf(csrf -> csrf.disable())
+//                .httpBasic(Customizer.withDefaults())
+//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//                .build();
+//    }
+
+
     //Administra la autenticacion
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -102,40 +75,47 @@ public class SecurityConfig {
 
     //Proveedor de autenticacion
     @Bean
-    public AuthenticationProvider authenticationProvider() {
+    public AuthenticationProvider authenticationProvider(UserDetailServiceImpl userDetailService) {
 
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setPasswordEncoder(passwordEncoder());
-        provider.setUserDetailsService(userDetailsService());
-
+        //UserDetailService, trae usuario de BD
+        provider.setUserDetailsService(userDetailService);
         return provider;
     }
 
-    //UserDetailService, trae usuario de BD
-    @Bean
-    public UserDetailsService userDetailsService() {
-        List<UserDetails> userDetails = new ArrayList<>();
 
-        userDetails.add(User.withUsername("Gonzalo")
-                .password("1234")
-                .roles("ADMIN")
-                .authorities("READ", "CREATE")
-                .build());
+    //UserDetailService con usuarios en memoria
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        List<UserDetails> userDetails = new ArrayList<>();
+//
+//        userDetails.add(User.withUsername("Gonzalo")
+//                .password("1234")
+//                .roles("ADMIN")
+//                .authorities("READ", "CREATE")
+//                .build());
+//
+//        userDetails.add(User.withUsername("Pepe")
+//                .password("1234")
+//                .roles("ADMIN")
+//                .authorities("READ")
+//                .build());
+//
+//        return new InMemoryUserDetailsManager(userDetails);
+//    }
 
-        userDetails.add(User.withUsername("Pepe")
-                .password("1234")
-                .roles("ADMIN")
-                .authorities("READ")
-                .build());
 
-        return new InMemoryUserDetailsManager(userDetails);
-    }
-
-    //Password Encoder
+    //Password Encoder encripta contraseñas
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+
+        return new BCryptPasswordEncoder();
+
+        //Solo para pruebas
+        // return NoOpPasswordEncoder.getInstance();
     }
+
 
 
 }

@@ -1,4 +1,4 @@
-package com.app.SpringSecurityApp.persistence.entities;
+package com.app.SpringSecurityApp.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
